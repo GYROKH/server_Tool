@@ -1,0 +1,10 @@
+# Ignore everything
+*
+###
+# But track .sh files
+!*.sh
+
+!*.md
+
+# Also track .gitignore itself
+!.gitignore
