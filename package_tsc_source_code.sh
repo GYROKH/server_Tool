@@ -1,5 +1,78 @@
 #! /bin/bash
 
+# Function to display start.sh command selection menu
+select_start_command() {
+    echo ""
+    echo "========================================"
+    echo "start.sh 執行指令選擇"
+    echo "========================================"
+    echo "請選擇要在 start.sh 中使用的執行指令："
+    echo "1. FT 模式 (僅 Final Test)"
+    echo "   指令: /usr/bin/python2 ./controller.py -url 127.0.0.1 -api v3_K25"
+    echo ""
+    echo "2. FT + CP 模式 (Final Test + CP 整合)"
+    echo "   指令: /usr/bin/python2 ./controller.py -url 127.0.0.1 -api v3_K25 -e88_eq mirle -erack KHCP"
+    echo ""
+    echo "3. 保持原有設定 (不修改)"
+    echo "========================================"
+}
+
+# Function to update start.sh based on user selection
+update_start_script() {
+    local choice="$1"
+    local start_file="$HOME/server_Tool/tsc/start.sh"
+    
+    if [[ ! -f "$start_file" ]]; then
+        echo "警告: start.sh 檔案不存在，略過修改"
+        return 1
+    fi
+    
+    case $choice in
+        1) # FT 模式
+            echo "設定 start.sh 為 FT 模式..."
+            # Create new start.sh with FT mode
+            cat > "$start_file" << 'EOF'
+#!/usr/bin/env sh
+
+#FT
+/usr/bin/python2 ./controller.py -url 127.0.0.1 -api v3_K25
+
+
+# FT + CP
+#/usr/bin/python2 ./controller.py -url 127.0.0.1 -api v3_K25 -e88_eq mirle -erack KHCP
+EOF
+            echo "✅ start.sh 已設定為 FT 模式"
+            ;;
+        2) # FT + CP 模式  
+            echo "設定 start.sh 為 FT + CP 模式..."
+            # Create new start.sh with FT + CP mode
+            cat > "$start_file" << 'EOF'
+#!/usr/bin/env sh
+
+#FT
+#/usr/bin/python2 ./controller.py -url 127.0.0.1 -api v3_K25
+
+
+# FT + CP
+/usr/bin/python2 ./controller.py -url 127.0.0.1 -api v3_K25 -e88_eq mirle -erack KHCP
+EOF
+            echo "✅ start.sh 已設定為 FT + CP 模式"
+            ;;
+        3) # 保持原設定
+            echo "✅ 保持 start.sh 原有設定"
+            return 0
+            ;;
+        *)
+            echo "錯誤: 無效的選項"
+            return 1
+            ;;
+    esac
+    
+    # Make sure start.sh is executable
+    chmod +x "$start_file"
+    echo "已確保 start.sh 具有執行權限"
+}
+
 # Scan for tsc directories only in /home/mcsadmin/
 echo "掃描 /home/mcsadmin/ 目錄中以 'tsc' 開頭的資料夾..."
 tsc_folders=($(find /home/mcsadmin -maxdepth 1 -type d -name "tsc*" 2>/dev/null | xargs -I {} basename {}))
@@ -121,6 +194,21 @@ else
     echo "No .git* files found."
 fi
 
+# Ask user to select start.sh command configuration
+select_start_command
+while true; do
+    echo -n "請選擇選項 (1-3): "
+    read -e start_choice
+    
+    if [[ "$start_choice" =~ ^[1-3]$ ]]; then
+        update_start_script "$start_choice"
+        break
+    else
+        echo "錯誤: 請輸入有效的選項編號 (1-3)"
+    fi
+done
+
+echo ""
 
 tsc_version=$(cat version.txt)
 
